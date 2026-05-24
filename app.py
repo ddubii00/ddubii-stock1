@@ -368,8 +368,12 @@ def get_sector_stocks(sector_code):
                 name = a.text.strip()
                 if not name or code in seen:
                     continue
+                row = a.find_parent('tr')
+                cols = [td.get_text(' ', strip=True) for td in row.select('td')] if row else []
+                # Naver 업종 상세 표: 시가총액(억)은 일반적으로 9번째 컬럼 인덱스 8
+                market_cap = _parse_number(cols[8]) if len(cols) > 8 else 0
                 seen.add(code)
-                results.append({'code': code, 'name': name})
+                results.append({'code': code, 'name': name, 'market_cap': market_cap or 0})
                 page_count += 1
             if page_count == 0:
                 break
@@ -436,7 +440,23 @@ def fetch_krx_index_history(index_code, count=500):
     }
 
     try:
-        res = requests.post(url, data=payload, headers=headers, timeout=5)
+        session = requests.Session()
+        # Prime KRX session/cookies before API call
+        session.get(
+            'https://data.krx.co.kr/contents/MDC/MDI/mdiLoader/index.cmd?menuId=MDC0301010103',
+            headers=headers,
+            timeout=7
+        )
+        res = session.post(url, data=payload, headers=headers, timeout=7)
+        if res.status_code != 200 or not res.text.lstrip().startswith('{'):
+            # Retry once with a fresh primed session
+            session = requests.Session()
+            session.get(
+                'https://data.krx.co.kr/contents/MDC/MDI/mdiLoader/index.cmd?menuId=MDC0301010103',
+                headers=headers,
+                timeout=7
+            )
+            res = session.post(url, data=payload, headers=headers, timeout=7)
         if res.status_code != 200 or not res.text.lstrip().startswith('{'):
             return []
         data = res.json()
@@ -467,12 +487,6 @@ def fetch_krx_index_history(index_code, count=500):
     return []
 
 def fetch_korea_sector_benchmark_history(benchmark):
-    yahoo_symbol = benchmark.get('symbol')
-    if yahoo_symbol:
-        yahoo_history = fetch_yahoo_history(yahoo_symbol)
-        if len(yahoo_history) >= 120:
-            return yahoo_history
-
     krx_history = fetch_krx_index_history(benchmark.get('code'))
     if len(krx_history) >= 120:
         return krx_history
@@ -519,6 +533,22 @@ def compute_peer_average_history(base_history, peer_histories):
                 'volume': 0
             })
     return sector_history
+
+def build_top10_mcap_sector_proxy(base_code, base_history, sector_stocks):
+    candidates = []
+    for peer in sorted(sector_stocks, key=lambda x: x.get('market_cap', 0), reverse=True):
+        pcode = peer.get('code')
+        if not pcode or pcode == base_code:
+            continue
+        ph = get_price_history(pcode, count=500)
+        if not ph:
+            continue
+        candidates.append((pcode, peer.get('market_cap', 0), ph))
+    if not candidates:
+        return []
+    top10 = candidates[:10]
+    peer_histories = {code: hist for code, _, hist in top10}
+    return compute_peer_average_history(base_history, peer_histories)
 
 def parse_date(date_str):
     date_str = date_str.replace('-', '')
@@ -728,29 +758,21 @@ def api_performance():
             peers = []
             print(f"Error fetching sector: {e}")
             
-        # 3. Prefer mapped KRX industry index only.
+        # 3. KRX official industry index only.
         sector_benchmark = resolve_korea_sector_benchmark(sector_name, stock['market'])
         sector_history = fetch_korea_sector_benchmark_history(sector_benchmark)
         if not sector_history:
-            peer_histories = {}
-            for peer in sector_stocks:
-                pcode = peer.get('code')
-                if not pcode or pcode == code:
-                    continue
-                ph = get_price_history(pcode, count=500)
-                if ph:
-                    peer_histories[pcode] = ph
-            sector_history = compute_peer_average_history(stock_history, peer_histories)
+            sector_history = build_top10_mcap_sector_proxy(code, stock_history, sector_stocks)
             if sector_history:
                 sector_benchmark = {
-                    'name': f"{sector_name} 업종 평균지수(구성종목 기반)",
+                    'name': f"{sector_name} 업종 프록시(시총 상위 10개 평균)",
                     'code': sector_code or '',
                     'symbol': '',
-                    'source': 'Naver 업종 구성종목 평균'
+                    'source': 'Naver 업종 구성종목(시총 상위 10개)'
                 }
             else:
                 return jsonify({
-                    'error': f"업종지수 데이터를 불러오지 못했습니다. 기준: {sector_benchmark.get('name', '업종지수')}"
+                    'error': f"KRX 공식 업종지수 및 시총상위10 프록시 데이터를 불러오지 못했습니다. 기준: {sector_benchmark.get('name', '업종지수')}"
                 }), 502
                     
     # 5. Calculate returns for periods
