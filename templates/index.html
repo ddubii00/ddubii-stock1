@@ -25,11 +25,7 @@
     <div class="app-container">
         <!-- Header -->
         <header class="app-header">
-            <div class="logo-container">
-                <span class="logo-icon">▲</span>
-                <h1 class="logo-text">ANTIGRAVITY <span class="logo-accent">STOCK</span></h1>
-            </div>
-            <p class="header-subtitle">지수 및 업종 대비 상대 수익률(초과수익률) 분석 시스템</p>
+            <h1 class="header-title-only">지수 및 업종 대비 상대 수익률(초과수익률) 분석 시스템</h1>
         </header>
 
         <!-- Search Section -->
@@ -45,6 +41,28 @@
             <div id="recent-searches-container" class="recent-searches-row hidden">
                 <span class="recent-label">최근 검색:</span>
                 <div id="recent-searches-list" class="recent-badge-container"></div>
+            </div>
+            <div class="watch-row">
+                <div id="holding-container" class="recent-searches-row hidden">
+                    <span class="recent-label">보유종목:</span>
+                    <div id="holding-list" class="recent-badge-container"></div>
+                </div>
+                <div id="favorite-container" class="recent-searches-row hidden">
+                    <span class="recent-label">관심종목:</span>
+                    <div id="favorite-list" class="recent-badge-container"></div>
+                </div>
+            </div>
+            <div class="watch-controls">
+                <div class="watch-input-wrap">
+                    <input type="text" id="holding-input" placeholder="보유종목명" maxlength="30">
+                    <ul id="holding-autocomplete-list" class="autocomplete-dropdown hidden"></ul>
+                </div>
+                <button id="add-holding-btn" class="btn-primary-sm">보유 추가</button>
+                <div class="watch-input-wrap">
+                    <input type="text" id="favorite-input" placeholder="관심종목명" maxlength="30">
+                    <ul id="favorite-autocomplete-list" class="autocomplete-dropdown hidden"></ul>
+                </div>
+                <button id="add-favorite-btn" class="btn-primary-sm">관심 추가</button>
             </div>
         </section>
 
@@ -82,7 +100,7 @@
                                     <th>기간</th>
                                     <th>종목 수익률</th>
                                     <th>시장 지수 대비 (%)</th>
-                                    <th>업종 평균 대비 (%)</th>
+                                    <th>업종지수 대비 (%)</th>
                                 </tr>
                             </thead>
                             <tbody id="performance-tbody">
@@ -91,8 +109,9 @@
                         </table>
                     </div>
                     <div class="table-footnote">
-                        <p>* <strong>%</strong>: 산술적 수익률 차이 (종목 수익률 - 지수/업종 평균 수익률)</p>
+                        <p>* <strong>%</strong>: 산술적 수익률 차이 (종목 수익률 - 시장/업종지수 수익률)</p>
                     </div>
+                    <div id="sell-warning-message" class="sell-warning-message hidden"></div>
                 </section>
 
                 <!-- Comparative Interactive Chart -->
@@ -115,10 +134,10 @@
 
             <!-- Sector Peers Information Card -->
             <section class="peers-card card">
-                <h3 class="card-title">업종 평균 산출 상세 정보</h3>
-                <p class="peers-desc">네이버 금융에서는 실시간 업종 인덱스의 과거 데이터를 제공하지 않으므로, 본 서비스는 해당 업종의 동종 시가총액 상위 주요 종목군(Peer Group)을 실시간 분석하여 <strong>'업종 평균 수익률 지수'</strong>를 정밀 산출합니다.</p>
+                <h3 class="card-title">업종지수 벤치마크 정보</h3>
+                <p id="sector-benchmark-desc" class="peers-desc">종목이 속한 업종 벤치마크 지수를 기준으로 상대 수익률을 비교합니다.</p>
                 <div class="peers-list-wrapper">
-                    <span class="peers-label">업종 분석 포함 종목:</span>
+                    <span class="peers-label">비교 기준:</span>
                     <div id="peers-list" class="peers-badge-container">
                         <!-- Populated by script.js -->
                     </div>
@@ -128,19 +147,25 @@
             <!-- Daily Candlestick and moving averages (MA) Card -->
             <section class="candlestick-card card">
                 <div class="chart-header-row">
-                    <h3 class="card-title">일봉 캔들스틱, 거래량 및 MACD</h3>
+                    <h3 class="card-title">캔들스틱, 거래량 및 MACD</h3>
                     <div class="candlestick-controls">
+                        <div class="candle-timeframe-switch" id="candle-timeframe-switch">
+                            <button class="timeframe-btn active" data-timeframe="day">일봉</button>
+                            <button class="timeframe-btn" data-timeframe="week">주봉</button>
+                            <button class="timeframe-btn" data-timeframe="month">월봉</button>
+                        </div>
                         <label for="candle-days-input" class="control-label">조회 기간 (일):</label>
-                        <input type="number" id="candle-days-input" min="10" max="400" value="100" class="days-input" />
+                        <input type="number" id="candle-days-input" min="10" max="400" value="120" class="days-input" />
                         <button id="update-candle-btn" class="btn-primary-sm">적용</button>
                     </div>
                 </div>
-                <div class="candle-chart-wrapper" style="display: flex; flex-direction: column; gap: 10px;">
+                <div class="candle-chart-wrapper">
                     <div id="candle-chart"></div>
-                    <div id="volume-chart" style="min-height: 140px;"></div>
-                    <div id="macd-chart" style="min-height: 560px;"></div>
+                    <div id="volume-chart" style="min-height: 224px;"></div>
+                    <div id="macd-chart" style="min-height: 314px;"></div>
+                    <div id="foreign-chart" style="min-height: 180px;"></div>
                 </div>
-                <p class="chart-footnote">* 빨간색 양봉/막대는 가격 상승/상승 마감, 파란색 음봉/막대는 가격 하락/하락 마감을 나타냅니다. 이동평균선과 거래량, MACD(12, 26, 9) 차트가 상하 연동되어 함께 드래그/스크롤됩니다.</p>
+                <p class="chart-footnote">* 빨간색 양봉은 가격 상승, 파란색 음봉은 가격 하락을 나타냅니다. 거래량 막대는 전일 대비 거래량 증가 시 빨간색, 감소 시 파란색으로 표시됩니다. 이동평균선과 거래량, MACD(12, 26, 9) 차트가 상하 연동되어 함께 드래그/스크롤됩니다.</p>
             </section>
         </main>
 
@@ -148,7 +173,7 @@
         <section id="welcome-view" class="welcome-card card">
             <div class="welcome-icon">📈</div>
             <h2>비교 분석할 종목을 검색하세요</h2>
-            <p>상단 검색창에 종목명을 입력하면 1주일, 1개월, 3개월, 6개월, 12개월의 시장 지수(KOSPI/KOSDAQ) 및 업종 평균 대비 상대 수익률을 비교 분석해 드립니다.</p>
+            <p>상단 검색창에 종목명을 입력하면 1주일, 1개월, 3개월, 6개월, 12개월의 시장 지수(KOSPI/KOSDAQ) 및 업종지수 대비 상대 수익률을 비교 분석해 드립니다.</p>
             <div class="popular-queries">
                 <span class="popular-label">인기 검색어 예시:</span>
                 <button class="popular-btn">삼전</button>

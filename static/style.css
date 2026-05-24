@@ -58,6 +58,10 @@ body {
     line-height: 1.5;
 }
 
+.hidden {
+    display: none !important;
+}
+
 /* Ambient Background Glowing Orbs */
 .bg-blur {
     position: fixed;
@@ -130,6 +134,46 @@ body {
     font-size: 2rem;
     font-weight: 700;
     letter-spacing: 2px;
+}
+.header-title-only {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    color: var(--text-primary);
+}
+.watch-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+}
+.watch-controls {
+    display: flex;
+    gap: 0.45rem;
+    margin-top: 0.7rem;
+    flex-wrap: nowrap;
+    align-items: center;
+}
+.watch-input-wrap {
+    position: relative;
+    min-width: 200px;
+}
+.watch-controls input {
+    height: 34px;
+    border-radius: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    padding: 0 0.6rem;
+    width: 100%;
+}
+.named-remove {
+    margin-left: 4px;
+    color: #94a3b8;
+    font-weight: 700;
+}
+@media (max-width: 980px) {
+    .watch-controls {
+        flex-wrap: wrap;
+    }
 }
 
 .logo-accent {
@@ -679,6 +723,18 @@ tbody tr:last-child td {
     box-shadow: 0 0 10px rgba(220, 38, 38, 0.08);
 }
 
+.sell-warning-message {
+    margin-top: 0.85rem;
+    padding: 0.75rem 0.9rem;
+    border-radius: 8px;
+    border: 1px solid rgba(220, 38, 38, 0.28);
+    background: rgba(220, 38, 38, 0.08);
+    color: #b91c1c;
+    font-size: 0.88rem;
+    font-weight: 800;
+    text-align: center;
+}
+
 .table-footnote {
     margin-top: 1.25rem;
     font-size: 0.75rem;
@@ -792,6 +848,13 @@ tbody tr:last-child td {
     font-size: 0.82rem;
     font-weight: 500;
     transition: all var(--transition-fast);
+}
+
+.peer-tag.benchmark-tag {
+    background: rgba(37, 99, 235, 0.08);
+    border-color: rgba(37, 99, 235, 0.2);
+    color: #1d4ed8;
+    font-weight: 700;
 }
 
 .peer-tag:hover {
@@ -912,6 +975,33 @@ tbody tr.underperform-row:hover td {
     display: flex;
     align-items: center;
     gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
+.candle-timeframe-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    border: 1px solid var(--card-hover-border);
+    border-radius: 8px;
+    padding: 0.2rem;
+    background: rgba(255, 255, 255, 0.85);
+}
+
+.timeframe-btn {
+    border: none;
+    border-radius: 6px;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    background: transparent;
+    cursor: pointer;
+}
+
+.timeframe-btn.active {
+    color: #1d4ed8;
+    background: rgba(59, 130, 246, 0.12);
 }
 
 .control-label {
@@ -963,7 +1053,10 @@ tbody tr.underperform-row:hover td {
 }
 
 .candle-chart-wrapper {
-    margin-top: 1.5rem;
+    margin-top: 0.75rem;
     min-height: 380px;
     background: transparent;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
 }

@@ -63,25 +63,43 @@ SECTOR_ETF_MAP = {
     'Communication Services': 'XLC'
 }
 
-US_PEERS_MAP = {
-    'Technology': ['AAPL', 'MSFT', 'NVDA', 'AVGO', 'ORCL', 'CRM'],
-    'Electronic Technology': ['AAPL', 'MSFT', 'NVDA', 'AVGO', 'ORCL', 'CRM'],
-    'Financial Services': ['JPM', 'BAC', 'MS', 'GS', 'WFC', 'V'],
-    'Finance': ['JPM', 'BAC', 'MS', 'GS', 'WFC', 'V'],
-    'Healthcare': ['LLY', 'UNH', 'JNJ', 'ABBV', 'MRK', 'PFE'],
-    'Health Technology': ['LLY', 'UNH', 'JNJ', 'ABBV', 'MRK', 'PFE'],
-    'Consumer Cyclical': ['AMZN', 'TSLA', 'HD', 'MCD', 'NKE', 'SBUX'],
-    'Consumer Durables': ['AMZN', 'TSLA', 'HD', 'MCD', 'NKE', 'SBUX'],
-    'Industrials': ['GE', 'CAT', 'UNP', 'HON', 'RTX', 'LMT'],
-    'Industrial Services': ['GE', 'CAT', 'UNP', 'HON', 'RTX', 'LMT'],
-    'Consumer Staples': ['PG', 'KO', 'PEP', 'COST', 'WMT', 'TGT'],
-    'Consumer Defensive': ['PG', 'KO', 'PEP', 'COST', 'WMT', 'TGT'],
-    'Energy': ['XOM', 'CVX', 'COP', 'SLB', 'EOG', 'MPC'],
-    'Utilities': ['NEE', 'SO', 'DUK', 'D', 'AEP', 'SRE'],
-    'Real Estate': ['PLD', 'AMT', 'EQIX', 'CCI', 'WY', 'PSA'],
-    'Basic Materials': ['LIN', 'APD', 'SHW', 'FCX', 'NEM', 'CTVA'],
-    'Communication Services': ['META', 'GOOGL', 'NFLX', 'DIS', 'TMUS', 'VZ']
+US_SECTOR_BENCHMARK_NAMES = {
+    'XLK': 'Technology Select Sector SPDR ETF',
+    'XLF': 'Financial Select Sector SPDR ETF',
+    'XLV': 'Health Care Select Sector SPDR ETF',
+    'XLY': 'Consumer Discretionary Select Sector SPDR ETF',
+    'XLI': 'Industrial Select Sector SPDR ETF',
+    'XLP': 'Consumer Staples Select Sector SPDR ETF',
+    'XLE': 'Energy Select Sector SPDR ETF',
+    'XLU': 'Utilities Select Sector SPDR ETF',
+    'XLRE': 'Real Estate Select Sector SPDR ETF',
+    'XLB': 'Materials Select Sector SPDR ETF',
+    'XLC': 'Communication Services Select Sector SPDR ETF',
+    '^GSPC': 'S&P 500'
 }
+
+KOREA_SECTOR_BENCHMARK_RULES = [
+    (('음식료', '식품', '담배'), '1005', 'KOSPI-05.KS', 'KRX 음식료품 업종지수'),
+    (('섬유', '의복'), '1006', 'KOSPI-06.KS', 'KRX 섬유의복 업종지수'),
+    (('종이', '목재'), '1007', 'KOSPI-07.KS', 'KRX 종이목재 업종지수'),
+    (('화학', '소재', '배터리', '2차전지'), '1008', 'KOSPI-08.KS', 'KRX 화학 업종지수'),
+    (('의약', '제약', '바이오', '건강관리'), '1009', 'KOSPI-09.KS', 'KRX 의약품 업종지수'),
+    (('비금속',), '1010', 'KOSPI-10.KS', 'KRX 비금속광물 업종지수'),
+    (('철강', '금속'), '1011', 'KOSPI-11.KS', 'KRX 철강금속 업종지수'),
+    (('기계',), '1012', 'KOSPI-12.KS', 'KRX 기계 업종지수'),
+    (('전기전자', '전자', '반도체', '디스플레이'), '1013', 'KOSPI-13.KS', 'KRX 전기전자 업종지수'),
+    (('의료정밀', '정밀'), '1014', 'KOSPI-14.KS', 'KRX 의료정밀 업종지수'),
+    (('운수장비', '자동차', '부품', '조선'), '1015', 'KOSPI-15.KS', 'KRX 운수장비 업종지수'),
+    (('유통',), '1016', 'KOSPI-16.KS', 'KRX 유통업 업종지수'),
+    (('전기가스', '가스'), '1017', 'KOSPI-17.KS', 'KRX 전기가스업 업종지수'),
+    (('건설',), '1018', 'KOSPI-18.KS', 'KRX 건설업 업종지수'),
+    (('운수창고', '항공', '해운', '물류'), '1019', 'KOSPI-19.KS', 'KRX 운수창고업 업종지수'),
+    (('통신',), '1020', 'KOSPI-20.KS', 'KRX 통신업 업종지수'),
+    (('금융', '은행', '증권', '보험'), '1021', 'KOSPI-21.KS', 'KRX 금융업 업종지수'),
+    (('서비스', '인터넷', '게임', '미디어', '소프트웨어'), '1026', 'KOSPI-26.KS', 'KRX 서비스업 업종지수')
+]
+
+US_PEERS_MAP = {}
 
 US_TICKER_NAMES = {
     'AAPL': '애플 (Apple)',
@@ -291,37 +309,216 @@ def get_price_history(code, count=500):
             })
     return history
 
+def get_foreign_ratio_history(code, count=300):
+    if not (code and code.isdigit() and len(code) == 6):
+        return []
+    headers = {'User-Agent': 'Mozilla/5.0'}
+    records = []
+    for page in range(1, 30):
+        try:
+            url = f"https://finance.naver.com/item/frgn.naver?code={code}&page={page}"
+            res = requests.get(url, headers=headers, timeout=7)
+            res.encoding = 'euc-kr'
+            soup = BeautifulSoup(res.text, 'html.parser')
+            rows = soup.select('table.type2 tr')
+            found = 0
+            for row in rows:
+                cols = [c.get_text(' ', strip=True) for c in row.select('td')]
+                if len(cols) < 9:
+                    continue
+                date = re.sub(r'[^0-9]', '', cols[0])
+                ratio_match = re.search(r'([0-9]+(?:\.[0-9]+)?)\s*%', cols[8])
+                if len(date) == 8 and ratio_match:
+                    records.append({'date': date, 'ratio': float(ratio_match.group(1))})
+                    found += 1
+            if found == 0:
+                break
+        except Exception as e:
+            print(f"Error fetching foreign ratio page {page} for {code}: {e}")
+            break
+    uniq = {}
+    for r in records:
+        uniq[r['date']] = r['ratio']
+    items = sorted(uniq.items(), key=lambda x: x[0])[-count:]
+    return [{'date': d, 'ratio': v} for d, v in items]
+
 def get_sector_stocks(sector_code):
     if not sector_code:
         return []
-    url = f"https://finance.naver.com/sise/sise_group_detail.naver?type=upjong&no={sector_code}"
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-    }
+    headers = {'User-Agent': 'Mozilla/5.0'}
+    results = []
+    seen = set()
     try:
-        res = requests.get(url, headers=headers)
-        res.encoding = 'euc-kr'
-        soup = BeautifulSoup(res.text, 'html.parser')
-        
-        stock_links = soup.find_all('a', href=re.compile(r'/item/main\.naver\?code=(\d+)'))
-        seen_codes = set()
-        stocks = []
-        for link in stock_links:
-            href = link.get('href', '')
-            match = re.search(r'code=(\d+)', href)
-            if match:
-                code = match.group(1)
-                name = link.text.strip()
-                if code not in seen_codes and name:
-                    seen_codes.add(code)
-                    stocks.append({
-                        'code': code,
-                        'name': name
-                    })
-        return stocks
+        for page in range(1, 6):
+            url = f"https://finance.naver.com/sise/sise_group_detail.naver?type=upjong&no={sector_code}&page={page}"
+            res = requests.get(url, headers=headers, timeout=5)
+            res.encoding = 'utf-8'
+            soup = BeautifulSoup(res.text, 'html.parser')
+            table = soup.select_one('table.type_5')
+            if not table:
+                continue
+            links = table.select('a[href*=\"item/main.naver?code=\"]')
+            page_count = 0
+            for a in links:
+                href = a.get('href', '')
+                m = re.search(r'code=(\d{6})', href)
+                if not m:
+                    continue
+                code = m.group(1)
+                name = a.text.strip()
+                if not name or code in seen:
+                    continue
+                seen.add(code)
+                results.append({'code': code, 'name': name})
+                page_count += 1
+            if page_count == 0:
+                break
+        return results
     except Exception as e:
-        print(f"Error fetching sector stocks: {e}")
+        print(f"Error fetching sector stocks({sector_code}): {e}")
+        return []
+
+def _parse_number(value):
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    cleaned = re.sub(r'[^0-9.\-]', '', str(value))
+    if not cleaned or cleaned in ('-', '.', '-.'):
+        return None
+    try:
+        return float(cleaned)
+    except ValueError:
+        return None
+
+def resolve_korea_sector_benchmark(sector_name, market):
+    normalized = re.sub(r'\s+', '', sector_name or '')
+    for keywords, krx_code, yahoo_symbol, label in KOREA_SECTOR_BENCHMARK_RULES:
+        if any(keyword in normalized for keyword in keywords):
+            return {
+                'name': label,
+                'code': krx_code,
+                'symbol': yahoo_symbol,
+                'source': 'KRX 업종지수'
+            }
+
+    market_label = 'KOSDAQ' if market == '코스닥' else 'KOSPI'
+    return {
+        'name': f'KRX {market_label} 업종지수({sector_name or "미분류"})',
+        'code': '',
+        'symbol': '',
+        'source': 'KRX 업종지수'
+    }
+
+def fetch_krx_index_history(index_code, count=500):
+    if not index_code:
+        return []
+
+    end_date = datetime.now().strftime('%Y%m%d')
+    start_date = (datetime.now() - timedelta(days=max(900, count * 3))).strftime('%Y%m%d')
+    krx_code = str(index_code).zfill(4)
+    url = 'https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd'
+    payload = {
+        'bld': 'dbms/MDC/STAT/standard/MDCSTAT00301',
+        'locale': 'ko_KR',
+        'indIdx': krx_code[0],
+        'indIdx2': krx_code[1:],
+        'strtDd': start_date,
+        'endDd': end_date,
+        'share': '2',
+        'money': '3',
+        'csvxls_isNo': 'false'
+    }
+    headers = {
+        'User-Agent': 'Mozilla/5.0',
+        'Origin': 'https://data.krx.co.kr',
+        'Referer': 'https://data.krx.co.kr/contents/MDC/MDI/mdiLoader/index.cmd?menuId=MDC0301010103'
+    }
+
+    try:
+        res = requests.post(url, data=payload, headers=headers, timeout=5)
+        if res.status_code != 200 or not res.text.lstrip().startswith('{'):
+            return []
+        data = res.json()
+        rows = data.get('output') or data.get('block1') or []
+        history = []
+        for row in rows:
+            raw_date = row.get('TRD_DD') or row.get('basDd') or row.get('BAS_DD') or row.get('일자')
+            raw_close = (
+                row.get('CLSPRC_IDX') or row.get('IDX_CLSPRC') or row.get('closeIdx') or
+                row.get('종가') or row.get('지수종가')
+            )
+            if not raw_date:
+                continue
+            date = re.sub(r'[^0-9]', '', str(raw_date))
+            close = _parse_number(raw_close)
+            if len(date) == 8 and close is not None:
+                history.append({
+                    'date': date,
+                    'open': close,
+                    'high': close,
+                    'low': close,
+                    'close': close,
+                    'volume': 0
+                })
+        return sorted(history, key=lambda x: x['date'])[-count:]
+    except Exception as e:
+        print(f"Error fetching KRX index {index_code}: {e}")
     return []
+
+def fetch_korea_sector_benchmark_history(benchmark):
+    yahoo_symbol = benchmark.get('symbol')
+    if yahoo_symbol:
+        yahoo_history = fetch_yahoo_history(yahoo_symbol)
+        if len(yahoo_history) >= 120:
+            return yahoo_history
+
+    krx_history = fetch_krx_index_history(benchmark.get('code'))
+    if len(krx_history) >= 120:
+        return krx_history
+    return []
+
+def compute_peer_average_history(base_history, peer_histories):
+    aligned_dates = [x['date'] for x in base_history]
+    price_maps = {
+        p_code: {x['date']: x['close'] for x in p_hist}
+        for p_code, p_hist in peer_histories.items()
+        if p_hist
+    }
+    if not aligned_dates or not price_maps:
+        return []
+
+    base_date = ''
+    valid_codes = []
+    for date in aligned_dates:
+        valid_codes = [code for code, price_map in price_maps.items() if date in price_map]
+        if valid_codes:
+            base_date = date
+            break
+    if not base_date:
+        return []
+
+    sector_history = []
+    for date in aligned_dates:
+        norm_sum = 0
+        count = 0
+        for code in valid_codes:
+            price_map = price_maps.get(code, {})
+            base_price = price_map.get(base_date)
+            current_price = price_map.get(date)
+            if base_price and current_price:
+                norm_sum += (current_price / base_price) * 100
+                count += 1
+        if count > 0:
+            sector_history.append({
+                'date': date,
+                'open': norm_sum / count,
+                'high': norm_sum / count,
+                'low': norm_sum / count,
+                'close': norm_sum / count,
+                'volume': 0
+            })
+    return sector_history
 
 def parse_date(date_str):
     date_str = date_str.replace('-', '')
@@ -450,58 +647,33 @@ def api_performance():
             if not market_history:
                 return jsonify({'error': 'S&P 500 지수 데이터를 가져오는데 실패했습니다.'}), 404
                 
-            # 3. Mapped ETF for sector
+            # 3. Mapped sector ETF/index benchmark
             etf = SECTOR_ETF_MAP.get(sector, '^GSPC')
-            # Fetch Sector ETF history
-            sector_history_raw = fetch_yahoo_history(etf)
-            if not sector_history_raw:
-                sector_history_raw = market_history
+            sector_history = fetch_yahoo_history(etf)
+            sector_benchmark = {
+                'name': US_SECTOR_BENCHMARK_NAMES.get(etf, f'{sector} benchmark'),
+                'code': etf,
+                'symbol': etf,
+                'source': '미국 섹터 ETF/지수'
+            }
+            if not sector_history:
+                sector_history = market_history
+                sector_benchmark = {
+                    'name': 'S&P 500',
+                    'code': '^GSPC',
+                    'symbol': '^GSPC',
+                    'source': '미국 시장지수 대체'
+                }
                 
             # Define peer US symbols
             peer_symbols = US_PEERS_MAP.get(sector, ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA'])
             peers_list = [p for p in peer_symbols if p != code][:4]
-            
-            # Fetch peer histories
-            peer_histories = {}
-            for p in peers_list:
-                try:
-                    p_hist = fetch_yahoo_history(p)
-                    if len(p_hist) >= 400:
-                        peer_histories[p] = p_hist
-                except Exception as e:
-                    print(f"Error fetching US peer {p}: {e}")
-                    
-            # Compute sector peer average (normalized to 100 on oldest date)
-            aligned_dates = [x['date'] for x in stock_history]
-            price_maps = {p_code: {x['date']: x['close'] for x in p_hist} for p_code, p_hist in peer_histories.items()}
-            price_maps[code] = {x['date']: x['close'] for x in stock_history}
-            
-            oldest_date = aligned_dates[0] if aligned_dates else ""
-            valid_codes = [c for c in price_maps if oldest_date in price_maps[c]]
-            
-            sector_history = []
-            if oldest_date:
-                for date in aligned_dates:
-                    norm_sum = 0
-                    count = 0
-                    for c in valid_codes:
-                        if date in price_maps[c]:
-                            base_price = price_maps[c][oldest_date]
-                            current_price = price_maps[c][date]
-                            norm_sum += (current_price / base_price) * 100
-                            count += 1
-                    if count > 0:
-                        sector_history.append({
-                            'date': date,
-                            'close': norm_sum / count
-                        })
-            else:
-                sector_history = sector_history_raw
                 
             # Peers objects for detailed clicks in the frontend
             peers = [{'code': p, 'name': US_TICKER_NAMES.get(p, p)} for p in peers_list]
             sector_name = sector
             sector_code = ""
+            foreign_ratio = []
             
         except Exception as e:
             return jsonify({'error': f'미국 주식 분석 처리 중 에러가 발생했습니다: {str(e)}'}), 500
@@ -535,6 +707,8 @@ def api_performance():
             stock_history = get_price_history(code)
             if not stock_history:
                 return jsonify({'error': '주가 이력을 불러올 수 없습니다.'}), 404
+            # Fetch foreign ownership ratio early before additional heavy requests.
+            foreign_ratio = get_foreign_ratio_history(code, count=500)
                 
             market_symbol = "KOSPI" if stock['market'] == "코스피" else "KOSDAQ"
             market_history = get_price_history(market_symbol)
@@ -554,42 +728,33 @@ def api_performance():
             peers = []
             print(f"Error fetching sector: {e}")
             
-        # 3. Fetch peer histories
-        peer_histories = {}
-        for p in peers:
-            try:
-                p_hist = get_price_history(p['code'])
-                if len(p_hist) >= 400:
-                    peer_histories[p['code']] = p_hist
-            except Exception as e:
-                print(f"Error fetching peer {p['name']} history: {e}")
-                
-        # 4. Compute sector peer average history (normalized to 100 on oldest date)
-        aligned_dates = [x['date'] for x in stock_history]
-        price_maps = {p_code: {x['date']: x['close'] for x in p_hist} for p_code, p_hist in peer_histories.items()}
-        price_maps[code] = {x['date']: x['close'] for x in stock_history}
-        
-        oldest_date = aligned_dates[0] if aligned_dates else ""
-        valid_codes = [c for c in price_maps if oldest_date in price_maps[c]]
-        
-        sector_history = []
-        if oldest_date:
-            for date in aligned_dates:
-                norm_sum = 0
-                count = 0
-                for c in valid_codes:
-                    if date in price_maps[c]:
-                        base_price = price_maps[c][oldest_date]
-                        current_price = price_maps[c][date]
-                        norm_sum += (current_price / base_price) * 100
-                        count += 1
-                if count > 0:
-                    sector_history.append({
-                        'date': date,
-                        'close': norm_sum / count
-                    })
+        # 3. Prefer mapped KRX industry index only.
+        sector_benchmark = resolve_korea_sector_benchmark(sector_name, stock['market'])
+        sector_history = fetch_korea_sector_benchmark_history(sector_benchmark)
+        if not sector_history:
+            peer_histories = {}
+            for peer in sector_stocks:
+                pcode = peer.get('code')
+                if not pcode or pcode == code:
+                    continue
+                ph = get_price_history(pcode, count=500)
+                if ph:
+                    peer_histories[pcode] = ph
+            sector_history = compute_peer_average_history(stock_history, peer_histories)
+            if sector_history:
+                sector_benchmark = {
+                    'name': f"{sector_name} 업종 평균지수(구성종목 기반)",
+                    'code': sector_code or '',
+                    'symbol': '',
+                    'source': 'Naver 업종 구성종목 평균'
+                }
+            else:
+                return jsonify({
+                    'error': f"업종지수 데이터를 불러오지 못했습니다. 기준: {sector_benchmark.get('name', '업종지수')}"
+                }), 502
                     
     # 5. Calculate returns for periods
+    aligned_dates = [x['date'] for x in stock_history]
     periods = {
         '1D': 1,
         '1W': 7,
@@ -599,7 +764,7 @@ def api_performance():
         '12M': 365
     }
     
-    # Calculate returns for stock, market and sector average
+    # Calculate returns for stock, market and sector benchmark
     stock_returns = calculate_returns(stock_history, periods)
     market_returns = calculate_returns(market_history, periods)
     sector_returns = calculate_returns(sector_history, periods)
@@ -634,14 +799,20 @@ def api_performance():
     market_map = {x['date']: x['close'] for x in market_history}
     sector_map = {x['date']: x['close'] for x in sector_history}
     
-    stock_base = stock_map.get(chart_start_date, 1.0)
-    market_base = market_map.get(chart_start_date, 1.0)
-    sector_base = sector_map.get(chart_start_date, 1.0)
+    stock_base = next((stock_map[d] for d in chart_dates if d in stock_map), 1.0)
+    market_base = next((market_map[d] for d in chart_dates if d in market_map), 1.0)
+    sector_base = next((sector_map[d] for d in chart_dates if d in sector_map), 1.0)
+    prev_stock = stock_base
+    prev_market = market_base
+    prev_sector = sector_base
     
     for date in chart_dates:
-        s_val = (stock_map.get(date, stock_base) / stock_base) * 100 if stock_base else 100.0
-        m_val = (market_map.get(date, market_base) / market_base) * 100 if market_base else 100.0
-        sec_val = (sector_map.get(date, sector_base) / sector_base) * 100 if sector_base else 100.0
+        prev_stock = stock_map.get(date, prev_stock)
+        prev_market = market_map.get(date, prev_market)
+        prev_sector = sector_map.get(date, prev_sector)
+        s_val = (prev_stock / stock_base) * 100 if stock_base else 100.0
+        m_val = (prev_market / market_base) * 100 if market_base else 100.0
+        sec_val = (prev_sector / sector_base) * 100 if sector_base else 100.0
         
         formatted_date = f"{date[:4]}-{date[4:6]}-{date[6:]}"
         
@@ -658,6 +829,7 @@ def api_performance():
             'sector_code': sector_code
         },
         'benchmark': market_symbol,
+        'sector_benchmark': sector_benchmark,
         'peers': peers,
         'table': performance_table,
         'chart': {
@@ -666,7 +838,8 @@ def api_performance():
             'market': [x['value'] for x in chart_market],
             'sector': [x['value'] for x in chart_sector]
         },
-        'ohlc': stock_history
+        'ohlc': stock_history,
+        'foreign_ratio': foreign_ratio
     })
 
 if __name__ == '__main__':
